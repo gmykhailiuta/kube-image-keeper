@@ -43,6 +43,8 @@ spec:
             - registry-proxy
             - -v={{ .Values.proxy.verbosity }}
             - -registry-endpoint={{ include "kube-image-keeper.fullname" . }}-registry:5000
+            - kube-api-rate-limit-qps={{ .Values.proxy.kubeApiRateLimits.qps }}
+            - kube-api-rate-limit-burst={{ .Values.proxy.kubeApiRateLimits.burst }}
           {{- with .Values.proxy.resources }}
           resources:
             {{- toYaml . | nindent 12 }}

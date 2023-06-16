@@ -30,8 +30,8 @@ func initFlags() {
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&kubeconfig, "kubeconfig", "", "Absolute path to the kubeconfig file")
 	flag.StringVar(&registry.Endpoint, "registry-endpoint", "kube-image-keeper-registry:5000", "The address of the registry where cached images are stored.")
-	flag.IntVar(&rateLimitQPS, "kube-api-rate-limit-qps", 5, "Kubernetes API request rate limit")
-	flag.IntVar(&rateLimitBurst, "kube-api-rate-limit-burst", 10, "Kubernetes API request burst")
+	flag.IntVar(&rateLimitQPS, "kube-api-rate-limit-qps", 0, "Kubernetes API request rate limit")
+	flag.IntVar(&rateLimitBurst, "kube-api-rate-limit-burst", 0, "Kubernetes API request burst")
 
 	flag.Parse()
 }
@@ -56,7 +56,11 @@ func main() {
 		panic(err)
 	}
 
-	config.RateLimiter = flowcontrol.NewTokenBucketRateLimiter(float32(rateLimitQPS), rateLimitBurst)
+	// Set rate limiter only if both QPS and burst are set
+	if rateLimitQPS > 0 && rateLimitBurst > 0 {
+		klog.Infof("setting Kubernetes API rate limiter to %d QPS and %d burst", rateLimitQPS, rateLimitBurst)
+		config.RateLimiter = flowcontrol.NewTokenBucketRateLimiter(float32(rateLimitQPS), rateLimitBurst)
+	}
 
 	k8sClient, err := client.New(config, client.Options{Scheme: scheme.NewScheme()})
 	if err != nil {
